@@ -98,8 +98,8 @@ export async function login(skipSwitch = false) {
 
   await wait(1000);
   await page.evaluate((un, pass) => {
-    document.getElementById('TPL_username_1').focus();
     document.getElementById('TPL_username_1').value = un;
+    document.getElementById('TPL_password_1').click();
     document.getElementById('TPL_password_1').focus();
     document.getElementById('TPL_password_1').value = pass;
   }, UNAME, PASSWORD);
@@ -167,4 +167,9 @@ export async function query(kws, pn=1) {
 
   await page.close();
   return result;
+}
+
+export async function destroy() {
+  const browser = await browserHandle;
+  await browser.close();
 }

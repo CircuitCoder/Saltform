@@ -34,6 +34,11 @@ async function work() {
 
       let done = false;
 
+      if(result.length === 0) {
+        done = true;
+        break;
+      }
+
       for(const entry of result) {
         const match = entry.link.match(/[?&]id=(\d+)($|&)/);
         if(!match) {
@@ -60,6 +65,9 @@ async function work() {
     if(count !== 0)
       await publisher.publish(`${count} new items found: ${kw}`);
   }
+
+  await backend.destroy();
+  process.exit(0);
 }
 
 work();
