@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "koa": "^2.6.2",
+    "koa-router": "^7.4.0",
+    "puppeteer-core": "^1.11.0",
+    "redis": "^2.8.0"
+  },
+  "scripts": {
+    "start": "node --experimental-modules main.mjs"
+  }
+}
