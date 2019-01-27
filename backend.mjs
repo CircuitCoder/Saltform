@@ -1,4 +1,5 @@
 import puppeteer from 'puppeteer-core';
+import Config from './config';
 
 const CHROME_EXEC = process.env.CHROME_EXEC || undefined;
 const CHROME_USERDATA = process.env.CHROME_USERDATA || undefined;
@@ -8,19 +9,20 @@ async function bootstrap() {
     executablePath: CHROME_EXEC,
     userDataDir: CHROME_USERDATA,
     headless: false,
-    args: ['--no-sandbox', '--auto-open-devtools-for-tabs'],
+    args: [
+      '--no-sandbox',
+      '--auto-open-devtools-for-tabs',
+//      '--headless',
+      '--hide-scrollbars',
+      '--mute-audio',
+    ],
   });
 
   return browser;
 }
 
-const UNAME = process.env.UNAME;
-const PASSWORD = process.env.PASSWORD;
-
-if(!UNAME || !PASSWORD) {
-  console.log('Please provide username and password');
-  process.exit(1);
-}
+const UNAME = Config.taobao.uname;
+const PASSWORD = Config.taobao.pass;
 
 const browserHandle = bootstrap();
 
@@ -28,7 +30,7 @@ function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export async function handleSlider(page, navigate = false) {
+export async function handleSlider(page) {
   const hasSlider = await page.evaluate(() => {
     return !!document.getElementById('nc_1_n1z');
   });
@@ -54,12 +56,7 @@ export async function handleSlider(page, navigate = false) {
   await page.mouse.move(x + 400, y);
   await page.mouse.up();
 
-  await wait(1000);
-
-  if(navigate) {
-    await page.waitForNavigation({ waitUntil: 'networkidle2' });
-    await wait(1000);
-  }
+  await wait(5000);
 }
 
 let loginPage;
@@ -122,11 +119,12 @@ export async function login(skipSwitch = false) {
   return true;
 }
 
-export async function query(kws) {
+export async function query(kws, pn=1) {
   const browser = await browserHandle;
   const page = await browser.newPage();
 
-  await page.goto(`https://2.taobao.com/list/list.htm?_input_charset=utf8&q=${kws}`);
+  await page.goto(`https://2.taobao.com/list/list.htm?_input_charset=utf8&q=${kws}&page=${pn}`, { waitUntil: 'domcontentloaded' });
+  await wait(2000);
   await page.evaluate(() => {
     Object.defineProperty(navigator, 'webdriver', {
       get: () => false,
@@ -135,9 +133,20 @@ export async function query(kws) {
 
   await wait(2000);
 
-  await handleSlider(page, true);
-  await wait(10000);
-  console.log('complete');
+  await handleSlider(page);
+
+  // Scroll
+  while(true) {
+    const height = await page.evaluate(() => document.documentElement.scrollHeight);
+    await page.evaluate(() => {
+      window.scrollBy({ top: 1000000 }); // Scroll to bottom
+    });
+    await wait(5000);
+    const newHeight = await page.evaluate(() => document.documentElement.scrollHeight);
+
+    if(height === newHeight) break;
+    console.log(`Height changed: ${height} -> ${newHeight}`);
+  }
 
   const result = await page.evaluate(() => {
     const items = document.querySelectorAll('.item-info');
